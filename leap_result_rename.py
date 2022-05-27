@@ -1,15 +1,29 @@
 import glob
 import json
 import os
+import tkinter as tk
 import zipfile
+from tkinter import filedialog
 
 CURRENT_FILE = os.getcwd()
 HIGHEST_FLOAT_POINT = '.3'
 
-def unzip(data: dict) -> dict:
-    with zipfile.ZipFile(data['zip_file'], 'r') as zip_file:
-        zip_file.extractall('./' + data['unzip_folder_name'])
+def select_zip_file(data: dict) -> dict:
+    root = tk.Tk()
+    root.withdraw()
+    file_path = filedialog.askopenfilename(parent=root, title='select zip file', initialdir='./')
+    data['zip_file_path'] = file_path
 
+    return data
+
+def unzip(data: dict) -> dict:
+    dir_of_zip = os.path.dirname(data['zip_file_path'])
+    unzip_folder_path = os.path.join(dir_of_zip, data['unzip_folder_name']).replace('\\', '/')
+
+    with zipfile.ZipFile(data['zip_file_path'], 'r') as zip_file:
+        zip_file.extractall(unzip_folder_path)
+
+    data['unzip_folder_path'] = unzip_folder_path
     data['res'] = True
 
     return data
@@ -74,19 +88,19 @@ def rename_files(data: dict) -> dict:
     return data
 
 if __name__ == "__main__":
-    leap_zip_file = glob.glob(CURRENT_FILE + '\\*.zip')[0]
     unzip_folder_name = "rawdata"
 
     data = {
-        "zip_file": leap_zip_file,
+        "zip_file_path": '',
         "unzip_folder_name": unzip_folder_name,
-        "unzip_folder_path": os.path.join(CURRENT_FILE, unzip_folder_name),
+        "unzip_folder_path": '',
         "res": False,
         "result": []
     }
 
-    data = unzip(data) and \
-        rename_files(data)
+    data = select_zip_file(data) and \
+            unzip(data) and \
+            rename_files(data)
 
     print(json.dumps(data, sort_keys=True, indent=4))
 else:
